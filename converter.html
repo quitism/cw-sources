@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Variable Converter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg:#0f1113; --panel:#121417; --muted:#98a0ac; --accent:#61dafb; --accent-2:#7bd389;
+            --border:rgba(255,255,255,0.06); --glass: rgba(255,255,255,0.02);
+            --text:#e6eef6; --danger:#ff6b6b; --shadow: 0 10px 30px rgba(0,0,0,0.6);
+            --code-bg: rgba(255,255,255,0.02); --highlight: rgba(107, 255, 178, 0.12);
+            --scroll-thumb: rgba(255,255,255,0.08);
+        }
+        /* Light mode variables */
+        .light {
+            --bg: #f6f8fa; --panel:#ffffff; --muted:#586069; --accent:#0066cc; --accent-2:#0b9d58;
+            --border: rgba(2,8,23,0.06); --glass: rgba(2,8,23,0.02); --text:#0b1220;
+            --code-bg: #f3f7fb; --highlight: rgba(12,120,60,0.08); --scroll-thumb: rgba(0,0,0,0.12);
+        }
+        *{box-sizing:border-box}
+        html,body{height:100%; margin:0}
+        body{
+            font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            background: linear-gradient(180deg, rgba(97,218,251,0.02), transparent), var(--bg);
+            color:var(--text);
+            padding:20px;
+            -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+            display:flex; flex-direction:column; gap:20px; min-height:100vh;
+        }
+
+        /* Header improvements */
+        .header{ 
+            width:100%; max-width:1400px; 
+            display:flex; gap:20px; align-items:center; justify-content:space-between;
+            margin:0 auto;
+            flex-wrap:wrap;
+        }
+
+        .brand{ 
+            display:flex; gap:12px; align-items:center; 
+            flex-shrink:0;
+        }
+        .logo{ 
+            width:48px; height:48px; border-radius:12px; 
+            display:flex; align-items:center; justify-content:center; 
+            font-weight:800; font-size:18px; color:#052028; 
+            background:linear-gradient(135deg,var(--accent),#4fb5ea);
+            box-shadow: 0 4px 12px rgba(97, 218, 251, 0.15);
+        }
+        .title{ line-height:1.2 }
+        .title h1{ margin:0; font-size:18px; font-weight:700 }
+        .title p{ margin:0; color:var(--muted); font-size:14px }
+
+        /* Better button system */
+        .toolbar{ 
+            display:flex; gap:12px; align-items:center; flex-wrap:wrap; 
+            background:var(--glass); backdrop-filter:blur(8px);
+            border:1px solid var(--border); border-radius:12px;
+            padding:8px;
+        }
+
+        .btn-group {
+            display:flex; gap:4px; align-items:center;
+            background:rgba(255,255,255,0.03); border-radius:10px;
+            padding:4px;
+        }
+
+        .btn{ 
+            border:none; cursor:pointer; padding:10px 16px; border-radius:8px; 
+            font-weight:600; font-size:14px; transition:all 0.2s;
+            display:flex; align-items:center; gap:8px;
+            white-space:nowrap;
+        }
+        .btn:hover { transform:translateY(-1px); }
+        .btn:active { transform:translateY(0px); }
+
+        .btn.primary{ 
+            background:linear-gradient(180deg,var(--accent),#4fb5ea); 
+            color:#051017; box-shadow:0 4px 12px rgba(97, 218, 251, 0.25);
+        }
+        .btn.primary:hover{ box-shadow:0 6px 16px rgba(97, 218, 251, 0.35); }
+
+        .btn.secondary{ 
+            background:linear-gradient(180deg,var(--accent-2),#5cb373); 
+            color:#051017; box-shadow:0 4px 12px rgba(123, 211, 137, 0.25);
+        }
+        .btn.secondary:hover{ box-shadow:0 6px 16px rgba(123, 211, 137, 0.35); }
+
+        .btn.ghost{ 
+            background:transparent; border:1px solid var(--border); color:var(--text); 
+        }
+        .btn.ghost:hover{ 
+            background:var(--glass); border-color:var(--accent);
+        }
+
+        .btn.small{ padding:8px 12px; font-size:13px; font-weight:500; text-decoration: none }
+        .btn.icon{ padding:10px; width:44px; justify-content:center; }
+
+        .btn:disabled {
+            opacity:0.5; cursor:not-allowed; transform:none !important;
+        }
+
+        /* View mode tabs */
+        .view-modes {
+            display:flex; gap:4px; background:var(--glass); 
+            border:1px solid var(--border); border-radius:10px; padding:4px;
+        }
+        .view-mode {
+            padding:8px 16px; border-radius:6px; cursor:pointer;
+            color:var(--muted); font-weight:500; font-size:13px;
+            transition:all 0.2s;
+        }
+        .view-mode.active {
+            background:var(--accent); color:#051017; font-weight:600;
+        }
+        .view-mode:hover:not(.active) {
+            background:var(--glass); color:var(--text);
+        }
+
+        /* Improved layout system */
+        .main-container {
+            width:100%; max-width:1400px; margin:0 auto;
+            display:flex; flex-direction:column; gap:20px;
+            flex:1;
+        }
+
+        .layout {
+            display:grid; gap:20px; align-items:start;
+        }
+
+        /* Different layout modes */
+        .layout.split-view {
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas: 
+                "input output"
+                "controls controls";
+        }
+
+        .layout.full-width {
+            grid-template-columns: 1fr;
+            grid-template-areas:
+                "input"
+                "output" 
+                "controls";
+        }
+
+        .layout.triple-view {
+            grid-template-columns: 1fr 1fr 350px;
+            grid-template-areas: "input output controls";
+        }
+
+        /* Mobile responsive breakpoints */
+        @media (max-width: 1200px) {
+            .layout.triple-view {
+                grid-template-columns: 1fr 1fr;
+                grid-template-areas: 
+                    "input output"
+                    "controls controls";
+            }
+        }
+
+        @media (max-width: 768px) {
+            body { padding:16px; gap:16px; }
+            
+            .header {
+                flex-direction:column; gap:16px; align-items:stretch;
+            }
+            
+            .toolbar {
+                justify-content:center; gap:8px;
+                flex-wrap:wrap;
+            }
+            
+            .btn-group {
+                gap:2px; padding:2px;
+            }
+            
+            .btn { 
+                padding:8px 12px; font-size:13px;
+                min-height:40px;
+            }
+            
+            .layout.split-view,
+            .layout.triple-view {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "input"
+                    "output"
+                    "controls";
+            }
+            
+            .view-modes {
+                order:-1; align-self:center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .toolbar {
+                padding:6px; gap:6px;
+            }
+            
+            .btn {
+                padding:8px 10px; font-size:12px;
+                min-height:36px;
+            }
+            
+            .btn-group {
+                flex-wrap:wrap; justify-content:center;
+            }
+        }
+
+        /* Grid areas */
+        .input-section { grid-area: input; }
+        .output-section { grid-area: output; }
+        .controls-section { grid-area: controls; }
+
+        .card{ 
+            background:linear-gradient(180deg,var(--panel), rgba(255,255,255,0.01)); 
+            border-radius:16px; padding:20px; border:1px solid var(--border); 
+            box-shadow:var(--shadow); backdrop-filter:blur(8px);
+        }
+
+        .card-header{ 
+            display:flex; gap:12px; align-items:center; justify-content:space-between; 
+            margin-bottom:16px; flex-wrap:wrap;
+        }
+        .card-title {
+            font-weight:700; font-size:16px; margin:0;
+            display:flex; align-items:center; gap:8px;
+        }
+        .card-subtitle {
+            color:var(--muted); font-size:13px; margin:0;
+        }
+
+        /* Enhanced controls */
+        .controls-grid {
+            display:grid; gap:16px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        .control-group {
+            display:flex; flex-direction:column; gap:8px;
+        }
+        .control-row {
+            display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+        }
+        .control-label {
+            font-size:13px; font-weight:600; color:var(--muted);
+            min-width:80px;
+        }
+
+        /* Better form inputs */
+        .input, .select {
+            padding:10px 12px; border-radius:8px; 
+            border:1px solid var(--border); 
+            background:var(--glass); color:var(--text);
+            font-size:14px; transition:all 0.2s;
+        }
+        .input:focus, .select:focus {
+            outline:none; border-color:var(--accent);
+            box-shadow:0 0 0 3px rgba(97, 218, 251, 0.1);
+        }
+
+        /* Editors */
+        .editor {
+            width:100%; height:50vh; min-height:300px; resize:vertical; 
+            background:var(--code-bg); border-radius:12px; 
+            border:1px solid rgba(255,255,255,0.03); padding:16px; 
+            color:var(--text); font-family:"Fira Code","Consolas",monospace; 
+            font-size:13px; line-height:1.4; 
+            transition:border-color 0.2s;
+        }
+        .editor:focus {
+            outline:none; border-color:var(--accent);
+        }
+
+        .preview-output{ 
+            white-space:pre-wrap; word-break:break-word; 
+            font-family:"Fira Code","Consolas",monospace; font-size:13px; 
+            padding:16px; border-radius:12px; background:var(--code-bg); 
+            min-height:50vh; height:50vh; overflow:auto; 
+            border:1px solid rgba(255,255,255,0.03);
+        }
+
+        /* Enhanced legend and tables */
+        .legend-container {
+            max-height:50vh; overflow:auto; 
+            border:1px solid var(--border); border-radius:12px;
+            background:var(--glass);
+        }
+
+        .legend-list{ 
+            padding:8px; font-family:"Fira Code",monospace; font-size:13px;
+        }
+        .legend-entry{ 
+            display:flex; justify-content:space-between; gap:12px; 
+            padding:10px 12px; border-radius:8px; margin-bottom:4px; 
+            background:transparent; align-items:center;
+            transition:background 0.2s;
+        }
+        .legend-entry:hover {
+            background:var(--glass);
+        }
+        .legend-key{ color:var(--muted); font-weight:500; }
+        .legend-val{ color:var(--accent-2); font-weight:700; }
+
+        .table-container {
+            border:1px solid var(--border); border-radius:12px;
+            overflow:hidden; background:var(--glass);
+            max-height:30vh; overflow-y:auto;
+        }
+
+        .table{ 
+            width:100%; border-collapse:collapse; 
+            font-family:"Fira Code",monospace; font-size:13px;
+        }
+        .table th, .table td{ 
+            text-align:left; padding:10px 12px; 
+            border-bottom:1px solid rgba(255,255,255,0.04);
+        }
+        .table th{ 
+            color:var(--muted); font-weight:700; 
+            background:var(--glass); position:sticky; top:0;
+        }
+        .table tbody tr:hover {
+            background:var(--glass);
+        }
+
+        /* Status and badges */
+        .status-bar {
+            display:flex; gap:12px; align-items:center; 
+            padding:12px 16px; background:var(--glass); 
+            border:1px solid var(--border); border-radius:12px;
+            font-size:13px; flex-wrap:wrap;
+            margin-top: 20px;
+        }
+
+        .badge{ 
+            padding:4px 10px; border-radius:999px; font-weight:600; font-size:12px;
+        }
+        .badge.primary{ background:rgba(97,218,251,0.15); color:var(--accent); }
+        .badge.success{ background:rgba(123,211,137,0.15); color:var(--accent-2); }
+        .badge.warning{ background:rgba(255,193,7,0.15); color:#ffc107; }
+
+        /* Theme toggle improvements */
+        .theme-toggle { 
+            display:flex; align-items:center; gap:8px;
+            padding:6px; border-radius:8px; cursor:pointer;
+            transition:background 0.2s;
+        }
+        .theme-toggle:hover {
+            background:var(--glass);
+        }
+        .toggle{ 
+            width:44px; height:24px; border-radius:999px; 
+            background:rgba(255,255,255,0.06); position:relative; 
+            transition:background 0.3s;
+        }
+        .toggle.active {
+            background:var(--accent);
+        }
+        .knob{ 
+            position:absolute; width:20px; height:20px; border-radius:50%; 
+            top:2px; left:2px; background:#fff; 
+            transition:all 0.3s ease; box-shadow:0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* Highlights */
+        .highlight{ 
+            background:var(--highlight); padding:0 4px; border-radius:4px; 
+            color:inherit; box-shadow:0 0 0 1px rgba(107, 255, 178, 0.2);
+        }
+
+        /* Scrollbars */
+        .preview-output, 
+        .legend-list, 
+        .editor,
+        .table-container { 
+            /* Custom scrollbar styles */
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: var(--scroll-thumb) transparent; /* Firefox */
+        }
+        .preview-output::-webkit-scrollbar, 
+        .legend-list::-webkit-scrollbar, 
+        .editor::-webkit-scrollbar,
+        .table-container::-webkit-scrollbar { 
+            width:8px; height:8px; 
+        }
+        .preview-output::-webkit-scrollbar-track, 
+        .legend-list::-webkit-scrollbar-track, 
+        .editor::-webkit-scrollbar-track,
+        .table-container::-webkit-scrollbar-track { 
+            background:transparent; 
+        }
+        .preview-output::-webkit-scrollbar-thumb, 
+        .legend-list::-webkit-scrollbar-thumb, 
+        .editor::-webkit-scrollbar-thumb,
+        .table-container::-webkit-scrollbar-thumb { 
+            background:var(--scroll-thumb); border-radius:10px; 
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity:0; transform:translateY(10px); }
+            to { opacity:1; transform:translateY(0); }
+        }
+        .card {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Loading states */
+        .loading {
+            position:relative; overflow:hidden;
+        }
+        .loading::after {
+            content:''; position:absolute; top:0; left:-100%; 
+            width:100%; height:100%; 
+            background:linear-gradient(90deg, transparent, rgba(97,218,251,0.1), transparent);
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading {
+            to { left:100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="brand">
+            <div class="logo">CW</div>
+            <div class="title">
+                <h1>CatWeb Variable Converter</h1>
+                <p class="card-subtitle">Advanced variable mapping with live preview & export</p>
+            </div>
+        </div>
+        <div class="toolbar">
+            <div class="btn-group">
+                <a href="index.html" class="btn ghost small">🏠 Home</a>
+                <a href="asset-manager.html" class="btn ghost small">🖼️ Asset Manager</a>
+                <a href="converter.html" class="btn ghost small">🔄 Converter</a>
+            </div>
+            <div class="theme-toggle" id="themeToggle">
+                <div class="toggle" id="toggleEl">
+                    <div class="knob" id="toggleKnob"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">🔄 Variable Converter</h2>
+            </div>
+            <div class="main-container">
+                <div class="layout triple-view" id="mainLayout">
+                    <div class="card input-section">
+                        <div class="card-header">
+                            <div>
+                                <h2 class="card-title">📝 Input JSON</h2>
+                                <p class="card-subtitle">Paste CatWeb export or upload file</p>
+                            </div>
+                        </div>
+                        <textarea
+                            id="jsonInput"
+                            class="editor"
+                            placeholder='Paste your CatWeb JSON here or upload a file...'
+                        ></textarea>
+                        <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center;">
+                            <input type="file" id="fileInput" accept=".json" style="display: none;">
+                            <button id="uploadFileBtn" class="btn ghost small">⬆️ Upload JSON File</button>
+                            <span id="fileNameDisplay" style="font-size: 0.9em; color: var(--muted);"></span>
+                        </div>
+                    </div>
+
+                    <div class="card output-section">
+                        <div class="card-header">
+                            <div>
+                                <h2 class="card-title">✨ Rendered Output</h2>
+                                <p class="card-subtitle">Live preview with highlighting</p>
+                            </div>
+                            <div class="control-row">
+                                <input
+                                    id="searchInput"
+                                    class="input"
+                                    placeholder="Search..."
+                                    style="width: 140px;"
+                                />
+                                <select id="highlightMode" class="select">
+                                    <option value="final">Highlight Final</option>
+                                    <option value="original">Highlight Original</option>
+                                </select>
+                                <label class="control-label" style="min-width: auto;">
+                                    <input
+                                        id="minifyCheckbox"
+                                        type="checkbox"
+                                        style="margin-right: 4px;"
+                                    /> Minify
+                                </label>
+                            </div>
+                        </div>
+                        <div id="rendered" class="preview-output"></div>
+                    </div>
+
+                    <div class="card controls-section">
+                        <div class="card-header">
+                            <h2 class="card-title">⚙️ Settings & Mappings</h2>
+                        </div>
+
+                        <div class="controls-grid">
+                            <div class="control-group">
+                                <label class="control-label">Variable Settings</label>
+                                <div class="control-row">
+                                    <input
+                                        id="prefixInput"
+                                        type="text"
+                                        class="input"
+                                        placeholder="Prefix (e.g., v_)"
+                                        style="flex: 1;"
+                                    />
+                                    <input
+                                        id="startNumberInput"
+                                        type="number"
+                                        class="input"
+                                        value="0"
+                                        style="width: 80px;"
+                                    />
+                                </div>
+                                <div class="control-row">
+                                    <label class="control-label" style="min-width: auto;">
+                                        <input
+                                            id="separateLocalsCheckbox"
+                                            type="checkbox"
+                                            style="margin-right: 4px;"
+                                        /> Separate locals
+                                    </label>
+                                    <label class="control-label" style="min-width: auto;">
+                                        <input
+                                            id="remapTupleAnyCheckbox"
+                                            type="checkbox"
+                                            style="margin-right: 4px;"
+                                        /> Remap tuples
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="control-group">
+                                <label class="control-label">Actions</label>
+                                <div class="control-row">
+                                    <button id="saveSettingsBtn" class="btn ghost small">💾 Save Settings</button>
+                                    <button id="resetSettingsBtn" class="btn ghost small">🔄 Reset</button>
+                                    <button id="convertQuickBtn" class="btn secondary small">⚡ Quick Convert</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 20px;">
+                            <input
+                                id="filterMappingsInput"
+                                class="input"
+                                placeholder="Filter mappings..."
+                                style="width: 100%; margin-bottom: 12px;"
+                            />
+
+                            <div class="legend-container">
+                                <div class="legend-list" id="legendList"></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 20px;">
+                            <div class="card-header" style="margin-bottom: 12px;">
+                                <h3 style="margin: 0; font-size: 14px; font-weight: 600;">📊 Comparison Table</h3>
+                                <div class="control-row">
+                                    <button id="downloadLegendBtn" class="btn ghost small">📄 Export Legend</button>
+                                    <button id="exportCompareCsvBtn" class="btn ghost small">📊 Export CSV</button>
+                                </div>
+                            </div>
+
+                            <div class="table-container">
+                                <table class="table" id="compareTable">
+                                    <thead><tr><th>Original</th><th>Final</th><th>Count</th></tr></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="statusBar" class="status-bar" style="display: none;"></div>
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="clearInputBtn" class="btn ghost">Clear Input</button>
+                <button id="copyOutputBtn" class="btn primary">Copy Output</button>
+                <button id="downloadOutputBtn" class="btn primary">Download Output</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Helper functions from src/utils/helpers.js
+        const escapeHtml = (s) => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+
+        const debounce = (fn, ms = 300) => {
+            let t;
+            return (...a) => {
+                clearTimeout(t);
+                t = setTimeout(() => fn(...a), ms);
+            };
+        };
+
+        const excludedVars = new Set(['l!index','l!value','l!messageContent','l!messageSenderId','l!messageSenderName','l!changedProperty']);
+        const variableFieldTypes = new Set(['variable','variable?','var','table','array','function','x','y']);
+
+        // State variables
+        let jsonInput = '';
+        let outputJsonString = '';
+        let prefix = '';
+        let startNumber = 0;
+        let remapTuples = true;
+        let separateLocals = false;
+        let minify = false;
+        let filterMappings = '';
+        let searchTerm = '';
+        let highlightMode = 'final';
+        let statusText = '';
+        let statusType = 'info';
+
+        let liveVariableMap = new Map();
+        let liveMappingInfo = new Map();
+        let liveNextNumber = 0;
+        let lastComputed = null;
+
+        // DOM Elements
+        const jsonInputElem = document.getElementById('jsonInput');
+        const searchInputElem = document.getElementById('searchInput');
+        const highlightModeElem = document.getElementById('highlightMode');
+        const minifyCheckbox = document.getElementById('minifyCheckbox');
+        const renderedOutputElem = document.getElementById('rendered');
+        const prefixInputElem = document.getElementById('prefixInput');
+        const startNumberInputElem = document.getElementById('startNumberInput');
+        const separateLocalsCheckbox = document.getElementById('separateLocalsCheckbox');
+        const remapTupleAnyCheckbox = document.getElementById('remapTupleAnyCheckbox');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+        const convertQuickBtn = document.getElementById('convertQuickBtn');
+        const filterMappingsInput = document.getElementById('filterMappingsInput');
+        const legendListElem = document.getElementById('legendList');
+        const compareTableBodyElem = document.getElementById('compareTable').querySelector('tbody');
+        const downloadLegendBtn = document.getElementById('downloadLegendBtn');
+        const exportCompareCsvBtn = document.getElementById('exportCompareCsvBtn');
+        const statusBarElem = document.getElementById('statusBar');
+        const clearInputBtn = document.getElementById('clearInputBtn');
+        const copyOutputBtn = document.getElementById('copyOutputBtn');
+        const downloadOutputBtn = document.getElementById('downloadOutputBtn');
+        const fileInput = document.getElementById('fileInput');
+        const uploadFileBtn = document.getElementById('uploadFileBtn');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+
+        const CONVERTER_SETTINGS_KEY = 'catweb.converter.settings';
+
+        // Functions to update UI from state
+        const updateUI = () => {
+            jsonInputElem.value = jsonInput;
+            searchInputElem.value = searchTerm;
+            highlightModeElem.value = highlightMode;
+            minifyCheckbox.checked = minify;
+            prefixInputElem.value = prefix;
+            startNumberInputElem.value = startNumber;
+            separateLocalsCheckbox.checked = separateLocals;
+            remapTupleAnyCheckbox.checked = remapTuples;
+            filterMappingsInput.value = filterMappings;
+
+            if (statusText) {
+                statusBarElem.style.display = 'flex';
+                statusBarElem.className = `status-bar ${statusType}`;
+                statusBarElem.innerHTML = statusText;
+            } else {
+                statusBarElem.style.display = 'none';
+            }
+
+            if (lastComputed) {
+                renderedOutputElem.innerHTML = highlightOutput(outputJsonString, lastComputed.map, searchTerm, highlightMode);
+                renderMappings(lastComputed.map, filterMappings);
+            } else {
+                renderedOutputElem.innerHTML = '';
+                legendListElem.innerHTML = '';
+                compareTableBodyElem.innerHTML = '';
+            }
+        };
+
+        const setStatus = (text, type = 'info') => {
+            statusText = text;
+            statusType = type;
+            updateUI();
+        };
+
+        // Core conversion logic
+        const computeMappingsFromData = (rawText, options) => {
+            const newLiveVariableMap = new Map();
+            const newLiveMappingInfo = new Map();
+            let currentNextNumber = parseInt(options.start, 10) || 0;
+
+            if (!rawText || !rawText.trim()) return { data: null, map: newLiveMappingInfo, error: null };
+            let data;
+            try { data = JSON.parse(rawText); } catch (e) { return { error: 'Invalid JSON: ' + e.message }; }
+
+            const isTextArray = arr => Array.isArray(arr) && arr.some(el => typeof el === 'object' && el !== null && 'value' in el);
+
+            function makeMappingKey(varNameWithScope, eventKey) {
+                if (options.separate && varNameWithScope.startsWith('l!') && eventKey != null) return `${eventKey}::${varNameWithScope}`;
+                return `global::${varNameWithScope}`;
+            }
+
+            function allocateIfMissing(mappingKey, originalName) {
+                if (!newLiveVariableMap.has(mappingKey)) {
+                    const n = currentNextNumber++;
+                    newLiveVariableMap.set(mappingKey, n);
+                    const scopePrefix = (originalName && (originalName.startsWith('l!') ? 'l!' : (originalName.startsWith('o!') ? 'o!' : '')));
+                    newLiveMappingInfo.set(mappingKey, { original: originalName, number: n, final: scopePrefix + options.prefix + n, count: 0 });
+                }
+                return newLiveVariableMap.get(mappingKey);
+            }
+
+            function processTextArray(textArray, eventKey) {
+                if (!textArray || !Array.isArray(textArray)) return;
+                textArray.forEach(textPart => {
+                    if (typeof textPart !== 'object' || textPart === null || !('value' in textPart)) return;
+                    const fieldType = (textPart.l || textPart.t || '').toString();
+                    const val = textPart.value;
+                    if (Array.isArray(val)) {
+                        val.forEach(inner => {
+                            if (typeof inner === 'object' && inner !== null && 'value' in inner) processTextArray([inner], eventKey);
+                            else if (typeof inner === 'object' && inner !== null) processNode(inner, eventKey);
+                        });
+                        return;
+                    }
+                    const rawValue = String(val);
+                    let isVariable = false, varNameWithScope = rawValue;
+                    if (variableFieldTypes.has(fieldType)) isVariable = true;
+                    else if (rawValue.startsWith('{') && rawValue.endsWith('}')) { isVariable = true; varNameWithScope = rawValue.substring(1, rawValue.length - 1); }
+                    if (!isVariable) return;
+                    varNameWithScope = String(varNameWithScope).trim(); if (!varNameWithScope) return;
+                    if (excludedVars.has(varNameWithScope)) return;
+                    if (varNameWithScope.startsWith('{') && varNameWithScope.endsWith('}')) varNameWithScope = varNameWithScope.substring(1, varNameWithScope.length - 1);
+
+                    let mappingKey;
+                    if (varNameWithScope.startsWith('l!') || varNameWithScope.startsWith('o!')) mappingKey = makeMappingKey(varNameWithScope, eventKey);
+                    else {
+                        let localCandidate = null;
+                        if (options.separate && eventKey != null) {
+                            localCandidate = makeMappingKey('l!' + varNameWithScope, eventKey);
+                            if (newLiveVariableMap.has(localCandidate)) mappingKey = localCandidate;
+                        }
+                        if (!mappingKey) mappingKey = makeMappingKey(varNameWithScope, eventKey);
+                    }
+
+                    const originalName = mappingKey.startsWith('global::') ? mappingKey.slice(8) : mappingKey.split('::')[1];
+                    allocateIfMissing(mappingKey, originalName);
+                    const id = newLiveVariableMap.get(mappingKey);
+                    const info = newLiveMappingInfo.get(mappingKey);
+                    const scopePrefix = (info.original && (info.original.startsWith('l!') ? 'l!' : (info.original.startsWith('o!') ? 'o!' : '')));
+                    info.final = scopePrefix + options.prefix + id;
+                    info.count = (info.count || 0) + 1;
+                });
+            }
+
+            function processNode(node, eventKey = null) {
+                if (Array.isArray(node)) { node.forEach(member => { if (typeof member === 'object' && member !== null && 'value' in member) processTextArray([member], eventKey); else processNode(member, eventKey); }); return; }
+                if (typeof node !== 'object' || node === null) return;
+                if (node.class === 'script' && Array.isArray(node.content)) {
+                    node.content.forEach((eventBlock, idx) => {
+                        const myKey = `event#${idx}`;
+                        if (isTextArray(eventBlock.text)) processTextArray(eventBlock.text, myKey);
+                        if (Array.isArray(eventBlock.variable_overrides)) {
+                            eventBlock.variable_overrides.forEach(vobj => {
+                                if (!vobj || typeof vobj.value !== 'string') return;
+                                const rawName = String(vobj.value).trim(); if (!rawName) return;
+                                const varWithScope = (rawName.startsWith('l!') || rawName.startsWith('o!')) ? rawName : 'l!' + rawName;
+                                const mappingKey = makeMappingKey(varWithScope, myKey);
+                                allocateIfMissing(mappingKey, varWithScope);
+                                newLiveMappingInfo.get(mappingKey).count = (newLiveMappingInfo.get(mappingKey).count || 0) + 1;
+                            });
+                        }
+                        if (Array.isArray(eventBlock.actions)) {
+                            eventBlock.actions.forEach(action => {
+                                for (const k in action) {
+                                    if (!action.hasOwnProperty(k)) continue;
+                                    const val = action[k];
+                                    if (isTextArray(val)) processTextArray(val, myKey);
+                                    else if (Array.isArray(val) && options.remapTuples) {
+                                        val.forEach(inner => { if (isTextArray(inner)) processTextArray(inner, myKey); else if (typeof inner === 'object' && inner !== null) processNode(inner, myKey); });
+                                    } else if (typeof val === 'object' && val !== null) processNode(val, myKey);
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    for (const k in node) {
+                        if (!node.hasOwnProperty(k)) continue;
+                        const v = node[k];
+                        if (isTextArray(v)) processTextArray(v, eventKey);
+                        else if (Array.isArray(v)) v.forEach(item => processNode(item, eventKey));
+                        else if (typeof v === 'object' && v !== null) processNode(v, eventKey);
+                    }
+                }
+            }
+
+            processNode(data, null);
+            liveVariableMap = newLiveVariableMap;
+            liveMappingInfo = newLiveMappingInfo;
+            liveNextNumber = currentNextNumber;
+            return { data, map: newLiveMappingInfo, error: null };
+        };
+
+        // Highlight rules
+        const highlightOutput = (jsonString, map, searchTerm, mode) => {
+            if (!jsonInput) return '';
+            let html = escapeHtml(jsonString);
+            const items = Array.from(map.values()).sort((a, b) => b.original.length - a.original.length);
+
+            items.forEach(info => {
+                const target = (mode === 'final' ? info.final : info.original);
+                if (!target) return;
+                const esc = target.replace(/[.*+?^${}()|[\\]/g, '\$&');
+                const re = new RegExp(esc, 'g');
+                html = html.replace(re, `<span class="highlight">${escapeHtml(target)}</span>`);
+            });
+
+            if (searchTerm) {
+                const escS = String(searchTerm).replace(/[.*+?^${}()|[\\]/g, '\$&');
+                const sre = new RegExp(escS, 'ig');
+                html = html.replace(sre, m => `<span style="background:rgba(255,255,0,0.14);border-radius:4px;padding:0 2px">${m}</span>`);
+            }
+            return html;
+        };
+
+        // Render mapping / compare UI
+        const renderMappings = (map, filterText = '') => {
+            legendListElem.innerHTML = '';
+            compareTableBodyElem.innerHTML = '';
+
+            const arr = Array.from(map.values()).sort((a, b) => a.number - b.number);
+            const lowerFilter = (filterText || '').toLowerCase();
+
+            arr.forEach(info => {
+                if (lowerFilter && !(info.original.toLowerCase().includes(lowerFilter) || info.final.toLowerCase().includes(lowerFilter))) return;
+
+                const entry = document.createElement('div');
+                entry.className = 'legend-entry';
+                const k = document.createElement('div');
+                k.className = 'legend-key';
+                k.textContent = info.original;
+                const v = document.createElement('div');
+                v.className = 'legend-val';
+                v.textContent = info.final + '  (id:' + info.number + ')';
+                entry.appendChild(k);
+                entry.appendChild(v);
+                legendListElem.appendChild(entry);
+
+                const tr = document.createElement('tr');
+                const td1 = document.createElement('td');
+                td1.textContent = info.original;
+                const td2 = document.createElement('td');
+                td2.textContent = info.final;
+                const td3 = document.createElement('td');
+                td3.textContent = info.count || 0;
+                tr.appendChild(td1);
+                tr.appendChild(td2);
+                tr.appendChild(td3);
+                compareTableBodyElem.appendChild(tr);
+            });
+        };
+
+        const saveConverterSettings = () => {
+            const settings = {
+                prefix: prefix,
+                start: String(startNumber),
+                remapTuples: remapTuples,
+                separate: separateLocals,
+                minify: minify,
+            };
+            localStorage.setItem(CONVERTER_SETTINGS_KEY, JSON.stringify(settings));
+            setStatus('Settings saved!', 'info');
+        };
+
+        const loadConverterSettings = () => {
+            const raw = localStorage.getItem(CONVERTER_SETTINGS_KEY);
+            if (!raw) return null;
+            try { return JSON.parse(raw); } catch (e) { return null; }
+        };
+
+        const applyConverterSettingsToUI = (s) => {
+            if (!s) return;
+            prefix = s.prefix || '';
+            startNumber = parseInt(s.start, 10) || 0;
+            remapTuples = !!s.remapTuples;
+            separateLocals = !!s.separate;
+            minify = !!s.minify;
+            updateUI();
+        };
+
+        const runPreview = debounce(() => {
+            const opts = { prefix, start: String(startNumber), remapTuples, separate: separateLocals };
+            const res = computeMappingsFromData(jsonInput, opts);
+
+            if (res.error) {
+                setStatus(`Preview error: ${res.error}`, 'danger');
+                outputJsonString = '';
+                lastComputed = null;
+                updateUI();
+                return;
+            }
+            setStatus('');
+            lastComputed = res;
+
+            const space = minify ? 0 : 4;
+            try {
+                outputJsonString = JSON.stringify(res.data, null, space);
+                updateUI();
+            } catch (e) {
+                setStatus(`Preview stringify error: ${e.message}`, 'danger');
+                outputJsonString = '';
+                updateUI();
+            }
+        }, 260);
+
+        // Event Handlers
+        jsonInputElem.addEventListener('input', (e) => { jsonInput = e.target.value; runPreview(); });
+        searchInputElem.addEventListener('input', (e) => { searchTerm = e.target.value; updateUI(); });
+        highlightModeElem.addEventListener('change', (e) => { highlightMode = e.target.value; updateUI(); });
+        minifyCheckbox.addEventListener('change', (e) => { minify = e.target.checked; runPreview(); });
+        prefixInputElem.addEventListener('input', (e) => { prefix = e.target.value; runPreview(); });
+        startNumberInputElem.addEventListener('input', (e) => { startNumber = parseInt(e.target.value, 10) || 0; runPreview(); });
+        separateLocalsCheckbox.addEventListener('change', (e) => { separateLocals = e.target.checked; runPreview(); });
+        remapTupleAnyCheckbox.addEventListener('change', (e) => { remapTuples = e.target.checked; runPreview(); });
+        filterMappingsInput.addEventListener('input', (e) => { filterMappings = e.target.value; updateUI(); });
+
+        saveSettingsBtn.addEventListener('click', saveConverterSettings);
+        resetSettingsBtn.addEventListener('click', () => {
+            localStorage.removeItem(CONVERTER_SETTINGS_KEY);
+            window.location.reload();
+        });
+        convertQuickBtn.addEventListener('click', () => {
+            // This will trigger runPreview via input change, then download
+            setTimeout(() => {
+                if (downloadOutputBtn) downloadOutputBtn.click();
+            }, 300); // Small delay to allow preview to run and outputJsonString to update
+        });
+
+        downloadLegendBtn.addEventListener('click', () => {
+            if (!lastComputed) {
+                alert('Run conversion first');
+                return;
+            }
+            const entries = Array.from(lastComputed.map.values()).sort((a, b) => a.number - b.number).map(i => `${i.original} -> ${i.final} (id:${i.number})`).join('\n');
+            const blob = new Blob([entries], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'legend.txt';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        });
+
+        exportCompareCsvBtn.addEventListener('click', () => {
+            if (!lastComputed) {
+                alert('Run conversion first');
+                return;
+            }
+            const rows = [['original', 'final', 'count']];
+            Array.from(lastComputed.map.values()).sort((a, b) => a.number - b.number).forEach(i => rows.push([i.original, i.final, i.count || 0]));
+            const csv = rows.map(r => r.map(c => `\"${String(c).replace(/\"/g, '\"\"')}\"`).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'compare.csv';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        });
+
+        clearInputBtn.addEventListener('click', () => {
+            jsonInput = '';
+            outputJsonString = '';
+            liveVariableMap = new Map();
+            liveMappingInfo = new Map();
+            liveNextNumber = 0;
+            lastComputed = null;
+            setStatus('');
+            updateUI();
+        });
+
+        copyOutputBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(outputJsonString || '');
+                copyOutputBtn.textContent = 'Copied!';
+                setTimeout(() => copyOutputBtn.textContent = 'Copy Output', 1200);
+            } catch (e) {
+                copyOutputBtn.textContent = 'Failed!';
+                setTimeout(() => copyOutputBtn.textContent = 'Copy Output', 1200);
+            }
+        });
+
+        downloadOutputBtn.addEventListener('click', () => {
+            if (!outputJsonString) return;
+            const blob = new Blob([outputJsonString], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'converted_script.json';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        });
+
+        uploadFileBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                fileNameDisplay.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    jsonInput = e.target.result;
+                    runPreview();
+                };
+                reader.readAsText(file);
+            } else {
+                fileNameDisplay.textContent = '';
+            }
+        });
+
+        // Theme toggle logic
+        const themeToggle = document.getElementById('themeToggle');
+        const toggleEl = document.getElementById('toggleEl');
+        const toggleKnob = document.getElementById('toggleKnob');
+
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('light');
+            updateThemeKnob();
+            localStorage.setItem('theme', document.documentElement.classList.contains('light') ? 'light' : 'dark');
+        });
+
+        function updateThemeKnob(){
+            const isLight = document.documentElement.classList.contains('light');
+            toggleKnob.style.transform = isLight ? 'translateX(18px)' : 'translateX(0px)';
+        }
+
+        // Load theme from localStorage
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.documentElement.classList.add('light');
+        } else {
+            document.documentElement.classList.remove('light');
+        }
+        updateThemeKnob();
+
+        // Initial load
+        const savedSettings = loadConverterSettings();
+        if (savedSettings) {
+            applyConverterSettingsToUI(savedSettings);
+        }
+        updateUI();
+        runPreview(); // Initial run to populate output if jsonInput is pre-filled or settings loaded
+
+    </script>
+</body>
+</html>

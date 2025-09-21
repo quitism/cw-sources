@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg:#0f1113; --panel:#121417; --muted:#98a0ac; --accent:#61dafb; --accent-2:#7bd389;
+            --border:rgba(255,255,255,0.06); --glass: rgba(255,255,255,0.02);
+            --text:#e6eef6; --danger:#ff6b6b; --shadow: 0 10px 30px rgba(0,0,0,0.6);
+            --code-bg: rgba(255,255,255,0.02); --highlight: rgba(107, 255, 178, 0.12);
+            --scroll-thumb: rgba(255,255,255,0.08);
+        }
+        /* Light mode variables */
+        .light {
+            --bg: #f6f8fa; --panel:#ffffff; --muted:#586069; --accent:#0066cc; --accent-2:#0b9d58;
+            --border: rgba(2,8,23,0.06); --glass: rgba(2,8,23,0.02); --text:#0b1220;
+            --code-bg: #f3f7fb; --highlight: rgba(12,120,60,0.08); --scroll-thumb: rgba(0,0,0,0.12);
+        }
+        *{box-sizing:border-box}
+        html,body{height:100%; margin:0}
+        body{
+            font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            background: linear-gradient(180deg, rgba(97,218,251,0.02), transparent), var(--bg);
+            color:var(--text);
+            padding:20px;
+            -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+            display:flex; flex-direction:column; gap:20px; min-height:100vh;
+        }
+
+        /* Header improvements */
+        .header{ 
+            width:100%; max-width:1400px; 
+            display:flex; gap:20px; align-items:center; justify-content:space-between;
+            margin:0 auto;
+            flex-wrap:wrap;
+        }
+
+        .brand{ 
+            display:flex; gap:12px; align-items:center; 
+            flex-shrink:0;
+        }
+        .logo{ 
+            width:48px; height:48px; border-radius:12px; 
+            display:flex; align-items:center; justify-content:center; 
+            font-weight:800; font-size:18px; color:#052028; 
+            background:linear-gradient(135deg,var(--accent),#4fb5ea);
+            box-shadow: 0 4px 12px rgba(97, 218, 251, 0.15);
+        }
+        .title{ line-height:1.2 }
+        .title h1{ margin:0; font-size:18px; font-weight:700 }
+        .title p{ margin:0; color:var(--muted); font-size:14px }
+
+        /* Better button system */
+        .toolbar{ 
+            display:flex; gap:12px; align-items:center; flex-wrap:wrap; 
+            background:var(--glass); backdrop-filter:blur(8px);
+            border:1px solid var(--border); border-radius:12px;
+            padding:8px;
+        }
+
+        .btn-group {
+            display:flex; gap:4px; align-items:center;
+            background:rgba(255,255,255,0.03); border-radius:10px;
+            padding:4px;
+        }
+
+        .btn{ 
+            border:none; cursor:pointer; padding:10px 16px; border-radius:8px; 
+            font-weight:600; font-size:14px; transition:all 0.2s;
+            display:flex; align-items:center; gap:8px;
+            white-space:nowrap;
+        }
+        .btn:hover { transform:translateY(-1px); }
+        .btn:active { transform:translateY(0px); }
+
+        .btn.primary{ 
+            background:linear-gradient(180deg,var(--accent),#4fb5ea); 
+            color:#051017; box-shadow:0 4px 12px rgba(97, 218, 251, 0.25);
+        }
+        .btn.primary:hover{ box-shadow:0 6px 16px rgba(97, 218, 251, 0.35); }
+
+        .btn.secondary{ 
+            background:linear-gradient(180deg,var(--accent-2),#5cb373); 
+            color:#051017; box-shadow:0 4px 12px rgba(123, 211, 137, 0.25);
+        }
+        .btn.secondary:hover{ box-shadow:0 6px 16px rgba(123, 211, 137, 0.35); }
+
+        .btn.ghost{ 
+            background:transparent; border:1px solid var(--border); color:var(--text); 
+        }
+        .btn.ghost:hover{ 
+            background:var(--glass); border-color:var(--accent);
+        }
+
+        .btn.small{ padding:8px 12px; font-size:13px; font-weight:500 }
+        .btn.icon{ padding:10px; width:44px; justify-content:center; }
+
+        .btn:disabled {
+            opacity:0.5; cursor:not-allowed; transform:none !important;
+        }
+
+        /* View mode tabs */
+        .view-modes {
+            display:flex; gap:4px; background:var(--glass); 
+            border:1px solid var(--border); border-radius:10px; padding:4px;
+        }
+        .view-mode {
+            padding:8px 16px; border-radius:6px; cursor:pointer;
+            color:var(--muted); font-weight:500; font-size:13px;
+            transition:all 0.2s;
+        }
+        .view-mode.active {
+            background:var(--accent); color:#051017; font-weight:600;
+        }
+        .view-mode:hover:not(.active) {
+            background:var(--glass); color:var(--text);
+        }
+
+        /* Improved layout system */
+        .main-container {
+            width:100%; max-width:1400px; margin:0 auto;
+            display:flex; flex-direction:column; gap:20px;
+            flex:1;
+        }
+
+        .layout {
+            display:grid; gap:20px; align-items:start;
+        }
+
+        /* Different layout modes */
+        .layout.split-view {
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas: 
+                "input output"
+                "controls controls";
+        }
+
+        .layout.full-width {
+            grid-template-columns: 1fr;
+            grid-template-areas:
+                "input"
+                "output" 
+                "controls";
+        }
+
+        .layout.triple-view {
+            grid-template-columns: 1fr 1fr 350px;
+            grid-template-areas: "input output controls";
+        }
+
+        /* Mobile responsive breakpoints */
+        @media (max-width: 1200px) {
+            .layout.triple-view {
+                grid-template-columns: 1fr 1fr;
+                grid-template-areas: 
+                    "input output"
+                    "controls controls";
+            }
+        }
+
+        @media (max-width: 768px) {
+            body { padding:16px; gap:16px; }
+            
+            .header {
+                flex-direction:column; gap:16px; align-items:stretch;
+            }
+            
+            .toolbar {
+                justify-content:center; gap:8px;
+                flex-wrap:wrap;
+            }
+            
+            .btn-group {
+                gap:2px; padding:2px;
+            }
+            
+            .btn { 
+                padding:8px 12px; font-size:13px;
+                min-height:40px;
+            }
+            
+            .layout.split-view,
+            .layout.triple-view {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "input"
+                    "output"
+                    "controls";
+            }
+            
+            .view-modes {
+                order:-1; align-self:center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .toolbar {
+                padding:6px; gap:6px;
+            }
+            
+            .btn {
+                padding:8px 10px; font-size:12px;
+                min-height:36px;
+            }
+            
+            .btn-group {
+                flex-wrap:wrap; justify-content:center;
+            }
+        }
+
+        /* Grid areas */
+        .input-section { grid-area: input; }
+        .output-section { grid-area: output; }
+        .controls-section { grid-area: controls; }
+
+        .card{ 
+            background:linear-gradient(180deg,var(--panel), rgba(255,255,255,0.01)); 
+            border-radius:16px; padding:20px; border:1px solid var(--border); 
+            box-shadow:var(--shadow); backdrop-filter:blur(8px);
+        }
+
+        .card-header{ 
+            display:flex; gap:12px; align-items:center; justify-content:space-between; 
+            margin-bottom:16px; flex-wrap:wrap;
+        }
+        .card-title {
+            font-weight:700; font-size:16px; margin:0;
+            display:flex; align-items:center; gap:8px;
+        }
+        .card-subtitle {
+            color:var(--muted); font-size:13px; margin:0;
+        }
+
+        /* Enhanced controls */
+        .controls-grid {
+            display:grid; gap:16px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        .control-group {
+            display:flex; flex-direction:column; gap:8px;
+        }
+        .control-row {
+            display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+        }
+        .control-label {
+            font-size:13px; font-weight:600; color:var(--muted);
+            min-width:80px;
+        }
+
+        /* Better form inputs */
+        .input, .select {
+            padding:10px 12px; border-radius:8px; 
+            border:1px solid var(--border); 
+            background:var(--glass); color:var(--text);
+            font-size:14px; transition:all 0.2s;
+        }
+        .input:focus, .select:focus {
+            outline:none; border-color:var(--accent);
+            box-shadow:0 0 0 3px rgba(97, 218, 251, 0.1);
+        }
+
+        /* Editors */
+        .editor {
+            width:100%; height:50vh; min-height:300px; resize:vertical; 
+            background:var(--code-bg); border-radius:12px; 
+            border:1px solid rgba(255,255,255,0.03); padding:16px; 
+            color:var(--text); font-family:"Fira Code","Consolas",monospace; 
+            font-size:13px; line-height:1.4; 
+            transition:border-color 0.2s;
+        }
+        .editor:focus {
+            outline:none; border-color:var(--accent);
+        }
+
+        .preview-output{ 
+            white-space:pre-wrap; word-break:break-word; 
+            font-family:"Fira Code","Consolas",monospace; font-size:13px; 
+            padding:16px; border-radius:12px; background:var(--code-bg); 
+            min-height:50vh; height:50vh; overflow:auto; 
+            border:1px solid rgba(255,255,255,0.03);
+        }
+
+        /* Enhanced legend and tables */
+        .legend-container {
+            max-height:50vh; overflow:auto; 
+            border:1px solid var(--border); border-radius:12px;
+            background:var(--glass);
+        }
+
+        .legend-list{ 
+            padding:8px; font-family:"Fira Code",monospace; font-size:13px;
+        }
+        .legend-entry{ 
+            display:flex; justify-content:space-between; gap:12px; 
+            padding:10px 12px; border-radius:8px; margin-bottom:4px; 
+            background:transparent; align-items:center;
+            transition:background 0.2s;
+        }
+        .legend-entry:hover {
+            background:var(--glass);
+        }
+        .legend-key{ color:var(--muted); font-weight:500; }
+        .legend-val{ color:var(--accent-2); font-weight:700; }
+
+        .table-container {
+            border:1px solid var(--border); border-radius:12px;
+            overflow:hidden; background:var(--glass);
+            max-height:30vh; overflow-y:auto;
+        }
+
+        .table{ 
+            width:100%; border-collapse:collapse; 
+            font-family:"Fira Code",monospace; font-size:13px;
+        }
+        .table th, .table td{ 
+            text-align:left; padding:10px 12px; 
+            border-bottom:1px solid rgba(255,255,255,0.04);
+        }
+        .table th{ 
+            color:var(--muted); font-weight:700; 
+            background:var(--glass); position:sticky; top:0;
+        }
+        .table tbody tr:hover {
+            background:var(--glass);
+        }
+
+        /* Status and badges */
+        .status-bar {
+            display:flex; gap:12px; align-items:center; 
+            padding:12px 16px; background:var(--glass); 
+            border:1px solid var(--border); border-radius:12px;
+            font-size:13px; flex-wrap:wrap;
+            margin-top: 20px;
+        }
+
+        .badge{ 
+            padding:4px 10px; border-radius:999px; font-weight:600; font-size:12px;
+        }
+        .badge.primary{ background:rgba(97,218,251,0.15); color:var(--accent); }
+        .badge.success{ background:rgba(123,211,137,0.15); color:var(--accent-2); }
+        .badge.warning{ background:rgba(255,193,7,0.15); color:#ffc107; }
+
+        /* Theme toggle improvements */
+        .theme-toggle { 
+            display:flex; align-items:center; gap:8px;
+            padding:6px; border-radius:8px; cursor:pointer;
+            transition:background 0.2s;
+        }
+        .theme-toggle:hover {
+            background:var(--glass);
+        }
+        .toggle{ 
+            width:44px; height:24px; border-radius:999px; 
+            background:rgba(255,255,255,0.06); position:relative; 
+            transition:background 0.3s;
+        }
+        .toggle.active {
+            background:var(--accent);
+        }
+        .knob{ 
+            position:absolute; width:20px; height:20px; border-radius:50%; 
+            top:2px; left:2px; background:#fff; 
+            transition:all 0.3s ease; box-shadow:0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* Highlights */
+        .highlight{ 
+            background:var(--highlight); padding:0 4px; border-radius:4px; 
+            color:inherit; box-shadow:0 0 0 1px rgba(107, 255, 178, 0.2);
+        }
+
+        /* Scrollbars */
+        .preview-output, 
+        .legend-list, 
+        .editor,
+        .table-container { 
+            /* Custom scrollbar styles */
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: var(--scroll-thumb) transparent; /* Firefox */
+        }
+        .preview-output::-webkit-scrollbar, 
+        .legend-list::-webkit-scrollbar, 
+        .editor::-webkit-scrollbar,
+        .table-container::-webkit-scrollbar { 
+            width:8px; height:8px; 
+        }
+        .preview-output::-webkit-scrollbar-track, 
+        .legend-list::-webkit-scrollbar-track, 
+        .editor::-webkit-scrollbar-track,
+        .table-container::-webkit-scrollbar-track { 
+            background:transparent; 
+        }
+        .preview-output::-webkit-scrollbar-thumb, 
+        .legend-list::-webkit-scrollbar-thumb, 
+        .editor::-webkit-scrollbar-thumb,
+        .table-container::-webkit-scrollbar-thumb { 
+            background:var(--scroll-thumb); border-radius:10px; 
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity:0; transform:translateY(10px); }
+            to { opacity:1; transform:translateY(0); }
+        }
+        .card {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Loading states */
+        .loading {
+            position:relative; overflow:hidden;
+        }
+        .loading::after {
+            content:''; position:absolute; top:0; left:-100%; 
+            width:100%; height:100%; 
+            background:linear-gradient(90deg, transparent, rgba(97,218,251,0.1), transparent);
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading {
+            to { left:100%; }
+        }
+
+        .asset-list {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .asset-item {
+            margin-bottom: 15px;
+            padding: 15px;
+        }
+
+        .asset-item h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .asset-item img {
+            max-width: 100px;
+            max-height: 100px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .asset-item audio {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .asset-item ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .asset-item li {
+            font-size: 0.9em;
+            color: var(--muted);
+            margin-bottom: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="brand">
+            <div class="logo">CW</div>
+            <div class="title">
+                <h1>CatWeb Asset Manager</h1>
+                <p class="card-subtitle">View and manage assets</p>
+            </div>
+        </div>
+        <div class="toolbar">
+            <div class="btn-group">
+                <a href="index.html" class="btn ghost small">🏠 Home</a>
+                <a href="asset-manager.html" class="btn ghost small">🖼️ Asset Manager</a>
+                <a href="converter.html" class="btn ghost small">🔄 Converter</a>
+            </div>
+            <div class="theme-toggle" id="themeToggle">
+                <div class="toggle" id="toggleEl">
+                    <div class="knob" id="toggleKnob"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">🖼️ Asset Manager</h2>
+                <p class="card-subtitle">Paste your CatWeb JSON below to analyze assets.</p>
+            </div>
+            <textarea id="jsonInput" class="editor" placeholder="Paste your CatWeb JSON here..."></textarea>
+            <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center;">
+                <input type="file" id="fileInput" accept=".json" style="display: none;">
+                <button id="uploadFileBtn" class="btn ghost small">⬆️ Upload JSON File</button>
+                <span id="fileNameDisplay" style="font-size: 0.9em; color: var(--muted);"></span>
+            </div>
+            <button id="processJsonBtn" class="btn primary" style="margin-top: 15px;">Process JSON</button>
+            <div id="assetManagerRoot" style="margin-top: 20px;">
+                <!-- Asset Manager content will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const findAssetsInJson = (node, path = '', assets = []) => {
+            if (typeof node !== 'object' || node === null) {
+                return assets;
+            }
+
+            if (Array.isArray(node)) {
+                node.forEach((item, index) => {
+                    findAssetsInJson(item, `${path}[${index}]`, assets);
+                });
+                return assets;
+            }
+
+            // Check current node's keys for asset patterns
+            for (const key in node) {
+                if (node.hasOwnProperty(key)) {
+                    const value = node[key];
+                    const currentPath = path ? `${path}.${key}` : key;
+
+                    let assetId = null;
+                    let assetType = null;
+
+                    // Case 1: Direct asset IDs like "image_id": "12345"
+                    if (key === 'image_id' && typeof value === 'string' && value.match(/^\d+$/)) {
+                        assetId = value;
+                        assetType = 'image';
+                    }
+                    // Case 2: Asset URLs like "image": "rbxassetid://12345"
+                    else if (typeof value === 'string') {
+                        const match = value.match(/rbxassetid:\/\/(\d+)/);
+                        if (match && match[1]) {
+                            assetId = match[1];
+                            assetType = 'image'; // Assume rbxassetid is for images if not specified
+                        }
+                    }
+                    // Case 3: Action blocks with assetbrowser, like in "Play audio" or "Set image"
+                    // This specifically checks for the object structure you provided.
+                    if (key === 'assetbrowser' && typeof node.value === 'string') {
+                        assetId = node.value;
+                        assetType = value; // value is 'image' or 'audio'
+                    }
+
+                    if (assetId && assetType) {
+                        // Prevent adding duplicates from the same recursive path
+                        if (!assets.some(a => a.id === assetId)) {
+                            assets.push({ type: assetType, id: assetId, path: currentPath });
+                        }
+                    }
+
+                    // Recurse into nested objects and arrays
+                    if (typeof value === 'object' && value !== null) {
+                        findAssetsInJson(value, currentPath, assets);
+                    }
+                }
+            }
+
+            return assets;
+        };
+
+        let assets = [];
+        let loading = false;
+        let error = null;
+
+        const assetManagerRoot = document.getElementById('assetManagerRoot');
+        const jsonInputElem = document.getElementById('jsonInput');
+        const processJsonBtn = document.getElementById('processJsonBtn');
+
+        const renderAssetManager = () => {
+            assetManagerRoot.innerHTML = ''; // Clear previous content
+
+            if (loading) {
+                assetManagerRoot.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">🖼️ Asset Manager</h2>
+                            <p class="card-subtitle">Loading assets...</p>
+                        </div>
+                        <p>Loading assets from your JSON...</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (error) {
+                assetManagerRoot.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">🖼️ Asset Manager</h2>
+                            <p class="card-subtitle" style="color: var(--danger);">Error loading assets</p>
+                        </div>
+                        <p>${error}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (assets.length === 0) {
+                assetManagerRoot.innerHTML = `
+                    <p>No assets found or JSON is empty. Paste your CatWeb JSON in the Converter tab to analyze assets.</p>
+                `;
+                return;
+            }
+
+            const assetListDiv = document.createElement('div');
+            assetListDiv.className = 'asset-list';
+
+            assets.forEach((asset, index) => {
+                const assetItemDiv = document.createElement('div');
+                assetItemDiv.className = 'asset-item card';
+                assetItemDiv.style.marginBottom = '15px';
+                assetItemDiv.style.padding = '15px';
+
+                let assetTypeIcon = '';
+                let assetTypeLabel = '';
+                if (asset.type === 'image') {
+                    assetTypeIcon = '🖼️';
+                    assetTypeLabel = 'Image';
+                } else if (asset.type === 'audio') {
+                    assetTypeIcon = '🔊';
+                    assetTypeLabel = 'Audio';
+                } else if (asset.type === 'user') {
+                    assetTypeIcon = '👤';
+                    assetTypeLabel = 'User Profile';
+                }
+
+                let mediaElement = '';
+                if (asset.type === 'image' && asset.metadata.url) {
+                    mediaElement = `<img src="${asset.metadata.url}" alt="Asset ${asset.id}" style="max-width: 100px; max-height: 100px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px;" />`;
+                } else if (asset.type === 'audio' && asset.metadata.url) {
+                    mediaElement = `<audio controls src="${asset.metadata.url}" style="width: 100%; margin-top: 10px;"></audio>`;
+                } else if (asset.type === 'user' && asset.metadata.avatarUrl) {
+                    mediaElement = `
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <img src="${asset.metadata.avatarUrl}" alt="User ${asset.id}" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;" />
+                            <div>
+                                <p style="margin: 0; font-weight: bold;">${asset.metadata.displayName || 'Unknown'}</p>
+                                <p style="margin: 0; font-size: 0.9em; color: var(--muted);">@${asset.metadata.username || 'Unknown'}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const usagesList = asset.usages.map(usage => `<li style="font-size: 0.9em; color: var(--muted); margin-bottom: 3px;">${usage}</li>`).join('');
+
+                assetItemDiv.innerHTML = `
+                    <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1.1em;">
+                        ${assetTypeIcon} ${assetTypeLabel}: ${asset.id}
+                    </h3>
+                    ${mediaElement}
+                    <p style="font-weight: bold; margin-bottom: 5px;">Usages:</p>
+                    <ul style="list-style-type: none; padding: 0; margin: 0;">
+                        ${usagesList}
+                    </ul>
+                `;
+                assetListDiv.appendChild(assetItemDiv);
+            });
+            assetManagerRoot.appendChild(assetListDiv);
+        };
+
+async function processJsonForAssets() {
+    loading = true;
+    error = null;
+    assets = [];
+    renderAssetManager();
+
+    const jsonInput = jsonInputElem.value;
+    if (!jsonInput || !jsonInput.trim()) {
+        loading = false;
+        renderAssetManager();
+        return;
+    }
+
+    let parsedJson;
+    try {
+        parsedJson = JSON.parse(jsonInput);
+    } catch (e) {
+        error = 'Invalid JSON input.';
+        loading = false;
+        renderAssetManager();
+        return;
+    }
+
+    const identifiedAssets = findAssetsInJson(parsedJson);
+    const uniqueAssets = {};
+    for (const asset of identifiedAssets) {
+        if (!uniqueAssets[asset.id]) uniqueAssets[asset.id] = { ...asset, usages: [] };
+        uniqueAssets[asset.id].usages.push(asset.path);
+    }
+
+    const assetsArray = Object.values(uniqueAssets);
+    const imageIds = assetsArray.filter(a => a.type === 'image').map(a => String(a.id));
+    const thumbnailMap = {};
+    const PROXY_BASE = 'https://marginal-maggy-litterbox-ce34456d.koyeb.app';
+
+    if (imageIds.length > 0) {
+        try {
+            const thumbUrl = `${PROXY_BASE}/thumbnail?id=${encodeURIComponent(imageIds.join(','))}`;
+            const thumbsResp = await fetchWithTimeout(thumbUrl, { timeout: 8000 });
+            const thumbsJson = await thumbsResp.json();
+            if (thumbsJson && Array.isArray(thumbsJson.data)) {
+                for (const item of thumbsJson.data) {
+                    const key = String(item.assetId ?? item.targetId ?? item.id ?? item.targetId ?? '');
+                    if (key) thumbnailMap[key] = item;
+                }
+            }
+        } catch (e) {
+            console.error('Failed to batch fetch thumbnails', e);
+        }
+    }
+
+    const assetsWithMetadata = [];
+    let processed = 0;
+    const total = assetsArray.length;
+
+    for (const asset of assetsArray) {
+        let metadata = {};
+        if (asset.type === 'image') {
+            const t = thumbnailMap[String(asset.id)];
+            if (t && t.imageUrl) metadata.url = t.imageUrl;
+            else metadata.error = 'thumbnail-missing';
+        } else if (asset.type === 'user') {
+            metadata.avatarUrl = `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${asset.id}&size=150x150&format=Png`;
+            try {
+                const resp = await fetchWithTimeout(`https://users.roblox.com/v1/users/${asset.id}`, { timeout: 6000 });
+                if (resp.ok) {
+                    const userData = await resp.json();
+                    metadata.username = userData.name;
+                    metadata.displayName = userData.displayName;
+                } else {
+                    metadata.username = 'Unknown';
+                    metadata.displayName = 'Unknown';
+                }
+            } catch (e) {
+                console.error(`Failed to fetch user ${asset.id}`, e);
+                metadata.username = 'Unknown';
+                metadata.displayName = 'Unknown';
+            }
+        } else if (asset.type === 'audio') {
+            try {
+                const assetResp = await fetchWithTimeout(`${PROXY_BASE}/asset/?id=${asset.id}`, { timeout: 8000 });
+                if (assetResp.ok) {
+                    const assetData = await assetResp.json();
+                    if (assetData && assetData.location) {
+                        try {
+                            const audioResp = await fetchWithTimeout(assetData.location, { timeout: 30000 });
+                            if (audioResp.ok) {
+                                const audioBlob = await audioResp.blob();
+                                metadata.url = URL.createObjectURL(audioBlob);
+                                metadata._blob = true;
+                            } else {
+                                metadata.error = `audio-fetch-status-${audioResp.status}`;
+                            }
+                        } catch (fetchErr) {
+                            console.error(`Failed to fetch audio file for ${asset.id}`, fetchErr);
+                            metadata.error = 'audio-fetch-failed';
+                        }
+                    } else {
+                        metadata.error = 'no-location';
+                    }
+                } else {
+                    metadata.error = `asset-error-${assetResp.status}`;
+                }
+            } catch (e) {
+                console.error(`Failed to resolve audio ${asset.id}`, e);
+                metadata.error = 'asset-fetch-failed';
+            }
+        }
+
+        assetsWithMetadata.push({ ...asset, metadata });
+        processed++;
+        assets = assetsWithMetadata.slice();
+        loading = true;
+        renderAssetManager();
+
+        if (processed < total) await new Promise(r => setTimeout(r, 200));
+    }
+
+    loading = false;
+    assets = assetsWithMetadata;
+    renderAssetManager();
+}
+
+async function fetchWithTimeout(url, { timeout = 8000, ...opts } = {}) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    try {
+        return await fetch(url, { signal: controller.signal, ...opts });
+    } finally {
+        clearTimeout(id);
+    }
+}
+
+
+
+        processJsonBtn.addEventListener('click', processJsonForAssets);
+
+        const fileInput = document.getElementById('fileInput');
+        const uploadFileBtn = document.getElementById('uploadFileBtn');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+
+        uploadFileBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                fileNameDisplay.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    jsonInputElem.value = e.target.result; // Update textarea value
+                    processJsonForAssets();
+                };
+                reader.readAsText(file);
+            } else {
+                fileNameDisplay.textContent = '';
+            }
+        });
+
+        // Theme toggle logic
+        const themeToggle = document.getElementById('themeToggle');
+        const toggleEl = document.getElementById('toggleEl');
+        const toggleKnob = document.getElementById('toggleKnob');
+
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('light');
+            updateThemeKnob();
+            localStorage.setItem('theme', document.documentElement.classList.contains('light') ? 'light' : 'dark');
+        });
+
+        function updateThemeKnob(){
+            const isLight = document.documentElement.classList.contains('light');
+            toggleKnob.style.transform = isLight ? 'translateX(18px)' : 'translateX(0px)';
+        }
+
+        // Load theme from localStorage
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.documentElement.classList.add('light');
+        } else {
+            document.documentElement.classList.remove('light');
+        }
+        updateThemeKnob();
+
+        // Initial render
+        renderAssetManager();
+    </script>
+</body>
+</html>
